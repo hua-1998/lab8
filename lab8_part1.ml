@@ -6,7 +6,7 @@
 
 (* Objective:
 
-This lab practices concepts of functors. 
+This lab practices concepts of functors.
 
 This part of the lab has been adapted from the functors chapter of
 Real World OCaml <http://dev.realworldocaml.org/functors.html>. *)
@@ -16,7 +16,7 @@ Functors - Part 1.
 
 For the first part of this lab, you will explore a realistic and
 useful application of functors -- a library to support interval
-computation. 
+computation.
 
 Intervals come up in many different contexts. As a concrete example,
 calendars need to associate events with time intervals (3-4pm or
@@ -52,7 +52,7 @@ used by the Stdlib.compare function:
     compare x y > 0     (* x > y *)
  *)
 
-module type ORDERED_TYPE = 
+module type ORDERED_TYPE =
   sig
     type t
     val compare : t -> t -> int
@@ -71,7 +71,7 @@ are built from).
 
 The functor definition starts out as
 
-    module MakeInterval (Endpoint : ORDERED_TYPE) = 
+    module MakeInterval (Endpoint : ORDERED_TYPE) =
       struct
         ...
       end
@@ -79,14 +79,14 @@ The functor definition starts out as
 Here, the argument to the functor is a module, given the name
 `Endpoint` and constrained to satisfy the ORDERED_TYPE module
 signature. Thus, we know that `Endpoint` will provide both a type
-(`Endpoint.t`) and a comnparison function over that type
+(`Endpoint.t`) and a comparison function over that type
 (`Endpoint.compare`). We can and will use those in defining the module
 being defined by the functor.
 
 Now, complete the funcctor definition below.
 ......................................................................*)
 
-module MakeInterval (Endpoint : ORDERED_TYPE) = 
+module MakeInterval (Endpoint : ORDERED_TYPE) =
   struct
     type interval =
       | Interval of Endpoint.t * Endpoint.t
@@ -96,22 +96,34 @@ module MakeInterval (Endpoint : ORDERED_TYPE) =
        `high` inclusive. If `low` is greater than `high`, then the
        interval is empty. *)
     let create (low : Endpoint.t) (high : Endpoint.t) : interval =
-      failwith "create not implemented"
+      let x = Endpoint.compare low high in
+      if x < 0 then Interval (low, high)
+      else Empty
 
     (* is_empty intvl -- Returns true if and only if `intvl` is
        empty *)
     let is_empty (intvl : interval) : bool =
-      failwith "is_empty not implemented"
+      intvl = Empty
 
     (* contains intvl x -- Returns true if and only if the value `x`
        is contained within `intvl` *)
     let contains (intvl : interval) (x : Endpoint.t) : bool =
-      failwith "contains not implemented"
+      match intvl with
+      | Empty -> false
+      | Interval (a, b) -> if compare a x < 0 || compare x b > 0 then false
+                           else true
 
     (* intersect intvl1 intvl2 -- Returns the intersection of `intvl1`
        and `intvl2` *)
     let intersect (intvl1 : interval) (intvl2 : interval) : interval =
-      failwith "intersect not implemented"
+      match intvl1, intvl2 with
+      | Interval (x1, y1), Interval (x2, y2) ->
+        if contains intvl2 x1 then (if contains intvl2 y1 then intvl1
+                                    else Interval (x1, y2))
+        else if contains intvl1 x2 then (if contains intvl1 y2 then intvl2
+                                         else Interval (x2, y1))
+        else Empty
+      | _, _ -> Empty
     end ;;
 
 (*......................................................................
@@ -161,8 +173,8 @@ give us a way of abstractly referring to the type for the endpoints of
 an interval.
 ......................................................................*)
 
-module type INTERVAL = 
-  sig 
+module type INTERVAL =
+  sig
     type interval
     type endpoint
     (* ... complete the interface here ... *)
@@ -194,9 +206,9 @@ module IntSafeInterval = struct end ;;
 
 (* Now, try evaluating the following expression in the REPL:
 
-    IntSafeInterval.create 2 3 ;; 
+    IntSafeInterval.create 2 3 ;;
 
-A type error will appear: 
+A type error will appear:
 
     Error: This expression has type int but an expression was expected of type
            IntInterval.endpoint
